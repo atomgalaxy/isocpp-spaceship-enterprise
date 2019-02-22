@@ -1,0 +1,262 @@
+<pre class='metadata'>
+Title: Unified Paper for Shipping Starship
+Status: D
+Audience: LWG, CWG
+Editor: Gašper Ažman <gasper.azman@gmail.com>
+Editor: Jeff Snyder <jeff-isocpp@caffeinated.me.uk>
+Editor: Barry Revzin <barry dot revzin at gmail dot com>
+Editor: Lawrence Crowl <Lawrence@Crowl.org>
+Shortname: DXXXX
+Abstract: A merge of LEWG-approved parts of wording from [[D0891R3]], [[P1185R0]], [[P1188R0]], [[D1189R0]] and [[P1380R1]]. The reader is encouraged to refer to those papers for complete expositions of everything. This paper is a compilation of what was agreed, not why.
+Group: WG21
+Date: 2019-02-22
+Markup Shorthands: markdown yes
+Revision: 0
+ED: https://github.com/atomgalaxy/isocpp-starship-enterprise.html
+</pre>
+
+<style>
+.ins, ins, ins *, span.ins, span.ins * {
+  background-color: rgb(200, 250, 200);
+  color: rgb(0, 136, 0);
+  text-decoration: none;
+}
+
+.del, del, del *, span.del, span.del * {
+  background-color: rgb(250, 200, 200);
+  color: rgb(255, 0, 0);
+  text-decoration: line-through;
+  text-decoration-color: rgb(255, 0, 0);
+}
+
+ul .std {
+  list-style-type: none;
+  padding-left: 0px;
+}
+</style>
+
+Revision History {#history}
+===========================
+
+R0: Initial version!
+
+
+Status of this paper {#sup}
+===========================
+
+This paper contains parts for CWG and LWG, pending wording review. LEWG and EWG have already signed off on the relevant pieces of design.
+
+
+Proposed wording (CWG):
+=======================
+
+
+Proposed wording (LWG):
+=======================
+
+Replace current algorithms with fallbacks:
+------------------------------------------
+
+Remove the sections on `strong_order`, `weak_order` and `partial_order` completely from 16.11.4 (they are to be replaced with customization point objects specified later in the paper).
+
+<div class='del'>`template<class T> constexpr strong_ordering strong_order(const T& a, const T& b);`</div>
+<ul class='std del'>
+<li>1 Effects: Compares two values and produces a result of type `strong_ordering`:</li>
+<ul>
+<li class='del'>(1.1) If `numeric_limits<T>::is_iec559` is true, returns a result of type `strong_ordering` that is consistent with the totalOrder operation as specified in ISO/IEC/IEEE 60559.</li>
+<li class='del'>(1.2) Otherwise, returns `a <=> b` if that expression is well-formed and convertible to `strong_ordering`.</li>
+<li class='del'>(1.3) Otherwise, if the expression a <=> b is well-formed, then the function is defined as deleted.</li>
+<li class='del'>(1.4) Otherwise, if the expressions a == b and a < b are each well-formed and convertible to bool, then</li>
+<ul>
+<li class='del'>(1.4.1) if a == b is true, returns `strong_ordering::equal`;</li>
+<li class='del'>(1.4.2) otherwise, if a < b is true, returns `strong_ordering::less`;</li>
+<li class='del'>(1.4.3) otherwise, returns `strong_ordering::greater`.</li>
+</ul>
+<li>(1.5) Otherwise, the function shall be defined as deleted.</li>
+</ul>
+</ul>
+
+<div class='del'>`template<class T> constexpr weak_ordering weak_order(const T& a, const T& b);`</div>
+
+<ul class='std del'>
+<li>2 Effects: Compares two values and produces a result of type `weak_ordering`:</li>
+<ul>
+<li class='del'>(2.1) Returns `a <=> b` if that expression is well-formed and convertible to `weak_ordering`.</li>
+<li class='del'>(2.2) Otherwise, if the expression a <=> b is well-formed, then the function is defined as deleted.</li>
+<li class='del'>(2.3) Otherwise, if the expressions a == b and a < b are each well-formed and convertible to bool, then</li>
+<ul>
+<li class='del'>(2.3.1) if a == b is true, returns `weak_ordering::eqivalen`;</li>
+<li class='del'>(2.3.2) otherwise, if a < b is true, returns `weak_ordering::less`;</li>
+<li class='del'>(2.3.3) otherwise, returns `weak_ordering::greater`.</li>
+</ul>
+<li>(2.5) Otherwise, the function shall be defined as deleted.</li>
+</ul>
+</ul>
+
+<div class='del'>`template<class T> constexpr partial_ordering partial_order(const T& a, const T& b);`</div>
+
+<ul class='std del'>
+<li>3 Effects: Compares two values and produces a result of type `partial_ordering`:</li>
+<ul>
+<li class='del'>(3.1) Returns `a <=> b` if that expression is well-formed and convertible to `partial_ordering`.</li>
+<li class='del'>(3.2) Otherwise, if the expression a <=> b is well-formed, then the function is defined as deleted.</li>
+<li class='del'>(3.3) Otherwise, if the expressions a == b and a < b are each well-formed and convertible to bool, then</li>
+<ul>
+<li class='del'>(3.3.1) if a == b is true, returns `partial_ordering::eqivalen`;</li>
+<li class='del'>(3.3.2) otherwise, if a < b is true, returns `partial_ordering::less`;</li>
+<li class='del'>(3.3.3) otherwise, returns `partial_ordering::greater`.</li>
+</ul>
+<li>(3.5) Otherwise, the function shall be defined as deleted.</li>
+</ul>
+</ul>
+
+
+Add the fallback CPOs in their place (these **C**POs are not meant for customisation):
+
+<div class='ins'>The name `compare_strong_order_fallback` denotes a customisation point object.
+The expression `std::compare_strong_order_fallback(E, F)` for some subexpressions `E` and `F` with type `T` is expression-equivalent to:
+<ul class='std ins'>
+<ul>
+<li>(#.2.1) If the expression `std::strong_order(a, b)` is well-formed and convertible to `strong_ordering`, return the result of the expression,</li>
+<li>(#.2.2) Otherwise, if the expression `3WAY<strong_ordering>(a, b)` is well-formed, return the result of the expression,</li>
+<li>(#.2.3) Otherwise, the function shall be defined as deleted.</li>
+</ul>
+[Note: the expression `std::compare_strong_order_fallback<Ordering>(E, F)` is always type-convertible to `strong_ordering` --end note]
+</div>
+
+<div class='ins'>The name `compare_weak_order_fallback` denotes a customisation point object.
+The expression `std::compare_weak_order_fallback(E, F)` for some subexpressions `E` and `F` with type `T` is expression-equivalent to:
+<ul class='std ins'>
+<ul>
+<li>(#.2.1) If the expression `std::weak_order(a, b)` is well-formed and convertible to `weak_ordering`, return the result of the expression,</li>
+<li>(#.2.2) Otherwise, if the expression `3WAY<weak_ordering>(a, b)` is well-formed, return the result of the expression,</li>
+<li>(#.2.3) Otherwise, the function shall be defined as deleted.</li>
+</ul>
+[Note: the expression `std::compare_weak_order_fallback<Ordering>(E, F)` is always type-convertible to `weak_ordering` --end note]
+</div>
+
+<div class='ins'>The name `compare_partial_order_fallback` denotes a customisation point object.
+The expression `std::compare_partial_order_fallback(E, F)` for some subexpressions `E` and `F` with type `T` is expression-equivalent to:
+<ul class='std ins'>
+<ul>
+<li>(#.2.1) If the expression `std::partial_order(a, b)` is well-formed and convertible to `partial_ordering`, return the result of the expression,</li>
+<li>(#.2.2) Otherwise, if the expression `3WAY<partial_ordering>(a, b)` is well-formed, return the result of the expression,</li>
+<li>(#.2.3) Otherwise, the function shall be defined as deleted.</li>
+</ul>
+[Note: the expression `std::compare_partial_order_fallback<Ordering>(E, F)` is always type-convertible to `partial_ordering` --end note]
+</div>
+
+
+Remove equality algorithms
+--------------------------
+
+From section 24.x.4, Comparison Algorithms [cmp.alg], remove `strong_equal` and `weak_equal`:
+
+<div class='del'>
+`template<class T> constexpr strong_equality strong_equal(const T& a, const T& b);`
+<ul>
+<li>4 <i>Effects</i>: Compares two values and produces a result of type `strong_equality`:</li>
+<ul>
+<li>(4.1) Returns a <=> b if that expression is well-formed and convertible to `strong_equality`.</li>
+<li>(4.2) Otherwise, if the expression a <=> b is well-formed, then the function is defined as deleted.</li>
+<li>(4.3) Otherwise, if the expression a == b is well-formed and convertible to bool, then</li>
+<ul>
+<li>(4.3.1) if a == b is true, returns `strong_equality::equal`;</li>
+<li>(4.3.2) otherwise, returns `strong_equality::nonequal`.</li>
+</ul>
+<li>(4.4) Otherwise, the function is defined as deleted.</li>
+</ul>
+</ul>
+
+
+`template<class T> constexpr weak_equality weak_equal(const T& a, const T& b);`
+<li>5 <i>Effects</i>: Compares two values and produces a result of type `weak_equality`:</li>
+<ul>
+<li>(5.1) Returns a <=> b if that expression is well-formed and convertible to `weak_equality`.</li>
+<li>(5.2) Otherwise, if the expression a <=> b is well-formed, then the function is defined as deleted.</li>
+<li>(5.3) Otherwise, if the expression a == b is well-formed and convertible to bool, then</li>
+<ul>
+<li>(5.3.1) if a == b is true, returns `weak_equality::equivalent`;</li>
+<li>(5.3.2) otherwise, returns `weak_equality::nonequivalent`.</li>
+</ul>
+<li>(5.4) Otherwise, the function is defined as deleted.</li>
+</ul>
+</div>
+
+
+Add `std::X_order(E, F)` CPOs
+-----------------------------
+
+The intent here is that we pick up user-provided `X_order(T, T)` overloads in their own namespaces, and allow the standard to provide overloads for standard types as well. The wording for CPOs was lifted from the ranges proposal by Casey Carter and Eric Niebler.
+
+
+Add the `strong_order` customisation point object:
+
+<div class='ins'>
+(#) The name `strong_order` denotes a customisation point object. The expression `std::strong_order(E, F)` for some subexpressions `E` and `F` with type `T` is expression-equivalent to:
+<ul style='list-style-type: none; padding-left: 0px;'>
+<li>(#.1) `strong_order(E, F)` if it is a valid expression,</li>
+<li>(#.2) Otherwise, `E <=> F` if it is a valid expression and its type is convertible to `strong_ordering`,</li>
+<li>(#.3) Otherwise, `std::strong_order(E, F)` is ill-formed. [Note: This case can result in substitution failure when `std::strong_order(E, F)` appears in the immediate context of a template instantiation. --end note]</li>
+</ul>
+[Note: Whenever `std::strong_order(E, F)` is a valid expression, its type is convertible to `strong_ordering`. --end note]
+</div>
+
+
+Add an overload of `strong_order` for the floating point types (as per [basic.fundamental]§12, these are float, double, long double):
+
+<div class='ins'>
+(#) If `is_floating_point<T>::value` is is true, `strong_order(T, T)` returns a result of type `strong_ordering` that is a strong order and that is consistent with `T`'s comparison operators. If `numeric_limits<T>::is_iec559` is also true, returns a result of type `strong_ordering` that is consistent with the totalOrder operation as specified in ISO/IEC/IEEE 60559.
+</div>
+
+
+Add the `weak_order` customisation point object:
+
+<div class='ins'>
+(#) The name `weak_order` denotes a customisation point object. The expression `std::weak_order(E, F)` for some subexpressions `E` and `F` with type `T` is expression-equivalent to:
+<ul style='list-style-type: none;'>
+<li>(#.1) `weak_order(E, F)` if it is a valid expression,</li>
+<li>(#.2) Otherwise, `E <=> F` if it is a valid expression and its type is convertible to `weak_ordering`,</li>
+<li>(#.3) Otherwise, `std::strong_order(E, F)` if it is a valid expression,</li>
+<li>(#.4) Otherwise, `std::weak_order(E, F)` is ill-formed. [Note: This case can result in substitution failure when `std::weak_order(E, F)` appears in the immediate context of a template instantiation. --end note]</li>
+</ul>
+[Note: Whenever `std::weak_order(E, F)` is a valid expression, its type is convertible to `weak_ordering`. --end note]
+</div>
+
+Add an overload of `weak_order` for the floating point types (as per [basic.fundamental]§12, these are float, double, long double):
+
+<div class='ins'>
+(#) If `is_floating_point<T>::value` is is true, `weak_order(T, T)` returns a result of type `weak_ordering` that is a weak order and that is consistent with both `T`'s comparison operators and `strong_order`.
+If `numeric_limits<T>::is_iec559` is also true, returns a result of type `weak_ordering` that has the following equivalence classes, ordered from lesser to greater:
+<ul style='list-style-type: none;'>
+<li>(#.1)Together, all negative NaN values
+<li>(#.2)Negative infinity
+<li>(#.3)Separately, each normal and subnormal negative value
+<li>(#.4)Together, both zero values
+<li>(#.5)Separately, each subnormal and normal positive value
+<li>(#.6)Positive infinity
+<li>(#.7)Together, all positive NaN values
+</ul>
+</div>
+
+Add the `partial_order` customisation point object:
+
+<div class='ins'>
+(#) The name `partial_order` denotes a customisation point object. The expression `std::partial_order(E, F)` for some subexpressions `E` and `F` with type `T` is expression-equivalent to:
+<ul style='list-style-type: none;'>
+<li>(#.1) `partial_order(E, F)` if it is a valid expression,</li>
+<li>(#.2) Otherwise, `E <=> F` if it is a valid expression and its type is convertible to `partial_ordering`,</li>
+<li>(#.3) Otherwise, `std::weak_order(E, F)` if it is a valid expression,</li>
+<li>(#.4) Otherwise, `std::partial_order(E, F)` is ill-formed. [Note: This case can result in substitution failure when `std::partial_order(E, F)` appears in the immediate context of a template instantiation. --end note]</li>
+</ul>
+[Note: Whenever `std::partial_order(E, F)` is a valid expression, its type is convertible to `partial_ordering`. --end note]
+</div>
+
+The team humbly petitions the Editor to make the requisite edits to the synopsis of the [compare.syn] section.
+
+
+
+
+<!--
+ vim: ft=markdown wrap linebreak nolist textwidth=0 wrapmargin=0
+-->
